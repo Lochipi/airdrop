@@ -14,8 +14,10 @@ contract BAYAirdrop {
     mapping(address => bool) public hasClaimed;
 
     constructor(IERC20 _token, bytes32 _merkleRoot, address _baycAddress) {
+        require(address(_token) != address(0), "Invalid token address");
+
         owner = msg.sender;
-        token = _token;
+        token = IERC20(_token);
         merkleRoot = _merkleRoot;
         BAYC_NFT_ADDRESS = _baycAddress;
     }
@@ -36,7 +38,7 @@ contract BAYAirdrop {
         emit ClaimdSucceful(msg.sender, _amount);
     }
 
-    function canClaim( address _claimer, uint256 _amount, bytes32[] calldata merkleProof ) public view returns (bool) {
+    function canClaim(address _claimer, uint256 _amount, bytes32[] calldata merkleProof) public view returns (bool) {
         return
             !hasClaimed[_claimer] &&
             MerkleProof.verify(
@@ -46,9 +48,18 @@ contract BAYAirdrop {
             );
     }
 
-    function checkBalance() external view returns (uint256 balance)   {
+    function checkBalance() external view returns (uint256 balance) {
         require(msg.sender != address(0), "Zero address detected");
         require(msg.sender == owner, "Only owner can perform this action");
         balance = token.balanceOf(address(this));
+    }
+
+    function withdraw() external {
+        require(msg.sender != address(0), "Zero address detected");
+        require(msg.sender == owner, "Only owner can perform this action");
+        uint256 balance = token.balanceOf(address(this));
+
+        require(balance > 0, "No balance to withdraw");
+        token.transfer(owner, balance);
     }
 }
